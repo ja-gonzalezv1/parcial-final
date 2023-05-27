@@ -247,3 +247,16 @@ tabla["s/w"].append(sig60/mid60)
 
 tablaf = pd.DataFrame(tabla)
 print(tablaf)
+
+fig, (ax2) = plt.subplots(ncols=1, sharey=True)
+
+lambd = [tabla["lambda"][1], tabla["lambda"][2], tabla["lambda"][0], tabla["lambda"][3], tabla["lambda"][4], tabla["lambda"][5]]
+omega = [tabla["omega"][1], tabla["omega"][2], tabla["omega"][0], tabla["omega"][3], tabla["omega"][4], tabla["omega"][5]]
+rangos = [tabla["rango"][1], tabla["rango"][2], tabla["rango"][0], tabla["rango"][3], tabla["rango"][4], tabla["rango"][5]]
+
+ax2.scatter(lambd, omega)
+ax2.axhline(y = 7.25*(10**(-5)))
+for i in range(len(omega)):
+    ax2.errorbar(lambd[i], omega[i], (rangos[i][1] - omega[i]) )
+ax2.set_xlabel("Lambda")
+ax2.set_ylabel("Omega")

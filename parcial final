@@ -1,0 +1,78 @@
+import numpy as np
+import pandas as pd
+import scipy.optimize as spo
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("https://raw.githubusercontent.com/asegura4488/Database/main/MetodosComputacionalesReforma/DataRotacion.csv")
+
+df.drop(df[(df['angle'] != 30)].index, inplace=True)
+data = np.array(df)
+
+h = data[:,0]
+lamb = data[:,1]
+y_ = data[:,2]
+sigmay= data[:,3]
+g = 9.81
+
+
+def y(h, lamb, w, g):
+    for n in range(len(w)):
+        y = 2*np.sqrt(2)*w[n]*np.cos(lamb*np.pi/180)*np.sqrt((h**3)/g)/3
+    return y
+
+
+def Chi2(w, h, y_, sigmay, lamb, g):
+    return np.sum (  (y_ - y(h, lamb, w, g))**2/(2*sigmay**2) )
+
+w0 = np.ones(10)
+
+nll = lambda *w: Chi2(*w)
+
+result = spo.minimize( nll, w0, args=(h, y_, sigmay, lamb, g),options={'disp':True} )
+best = result.x
+print(best)
+
+_h = np.linspace(np.min(h),np.max(h),100)
+ys = y(_h, 30, best, g)
+plt.errorbar(h, y_, yerr=sigmay, fmt='.')
+plt.plot(_h,ys,color='r')
+
+
+gravedad = []
+omega = []
+N = 300
+
+for i in range(N):
+    g_ = g + np.random.normal(loc=0,scale=1)
+    gravedad.append(g_)
+    _y_ = y_ + np.random.normal( loc=0, scale=sigmay[0], size=len(y_) )
+    result = spo.minimize( nll, w0, args=(h, _y_, sigmay, lamb, g_),options={'disp':True} )
+    best_ = result.x
+    omega.append(best_[-1])
+Gravedad = np.array(gravedad)
+Omega = np.array(omega)
+
+
+H2,xedges,yedges = np.histogram2d(Omega,Gravedad,bins=(29,29))
+
+fig, (ax1) = plt.subplots(ncols=1, sharey=True)
+ax1.pcolormesh(xedges, yedges, H2)
+ax1.set_xlim(Omega.min(), Omega.max())
+ax1.set_ylim(Gravedad.min(), Gravedad.max())
+
+# Si estan correlacionadas, ya que cuando una aumenta, la otra tambien. Tienen correlacionadas positivamente
+
+H1 = np.sum(H2,axis=1)
+cs = np.cumsum(H1)
+ij = np.searchsorted( cs, np.percentile(cs,16) )
+ii = np.searchsorted( cs, np.percentile(cs,50) )
+ji = np.searchsorted( cs, np.percentile(cs,84) )
+#print(H1)
+#print(cs)
+#print(ij)
+#print(ii)
+#print(ji)
+
+k = np.argmax(H1)
+print(k, Omega[k])
+print(ii, Omega[ii])
